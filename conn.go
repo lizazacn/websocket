@@ -90,6 +90,8 @@ var ErrCloseSent = errors.New("websocket: close sent")
 // read limit set for the connection.
 var ErrReadLimit = errors.New("websocket: read limit exceeded")
 
+var ErrConcurrentWrite = errors.New("concurrent write to websocket connection")
+
 // netError satisfies the net Error interface.
 type netError struct {
 	msg       string
@@ -629,14 +631,14 @@ func (w *messageWriter) flushFrame(final bool, extra []byte) error {
 	// documentation for more info.
 
 	if c.isWriting {
-		panic("concurrent write to websocket connection")
+		return ErrConcurrentWrite
 	}
 	c.isWriting = true
 
 	err := c.write(w.frameType, c.writeDeadline, c.writeBuf[framePos:w.pos], extra)
 
 	if !c.isWriting {
-		panic("concurrent write to websocket connection")
+		return ErrConcurrentWrite
 	}
 	c.isWriting = false
 
@@ -757,12 +759,12 @@ func (c *Conn) WritePreparedMessage(pm *PreparedMessage) error {
 		return err
 	}
 	if c.isWriting {
-		panic("concurrent write to websocket connection")
+		return ErrConcurrentWrite
 	}
 	c.isWriting = true
 	err = c.write(frameType, c.writeDeadline, frameData, nil)
 	if !c.isWriting {
-		panic("concurrent write to websocket connection")
+		return ErrConcurrentWrite
 	}
 	c.isWriting = false
 	return err
@@ -1052,7 +1054,7 @@ func (c *Conn) NextReader() (messageType int, r io.Reader, err error) {
 	// this error, panic on repeated reads to the failed connection.
 	c.readErrCount++
 	if c.readErrCount >= 1000 {
-		panic("repeated read on failed websocket connection")
+		return errors.New("repeated read on failed websocket connection")
 	}
 
 	return noFrame, nil, c.readErr
