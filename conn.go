@@ -1054,7 +1054,7 @@ func (c *Conn) NextReader() (messageType int, r io.Reader, err error) {
 	// this error, panic on repeated reads to the failed connection.
 	c.readErrCount++
 	if c.readErrCount >= 1000 {
-		return errors.New("repeated read on failed websocket connection")
+		return noFrame, nil, errors.New("repeated read on failed websocket connection")
 	}
 
 	return noFrame, nil, c.readErr
