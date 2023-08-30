@@ -90,8 +90,6 @@ var ErrCloseSent = errors.New("websocket: close sent")
 // read limit set for the connection.
 var ErrReadLimit = errors.New("websocket: read limit exceeded")
 
-var ErrConcurrentWrite = errors.New("concurrent write to websocket connection")
-
 // netError satisfies the net Error interface.
 type netError struct {
 	msg       string
@@ -631,14 +629,14 @@ func (w *messageWriter) flushFrame(final bool, extra []byte) error {
 	// documentation for more info.
 
 	if c.isWriting {
-		return ErrConcurrentWrite
+		panic("concurrent write to websocket connection")
 	}
 	c.isWriting = true
 
 	err := c.write(w.frameType, c.writeDeadline, c.writeBuf[framePos:w.pos], extra)
 
 	if !c.isWriting {
-		return ErrConcurrentWrite
+		panic("concurrent write to websocket connection")
 	}
 	c.isWriting = false
 
@@ -759,12 +757,12 @@ func (c *Conn) WritePreparedMessage(pm *PreparedMessage) error {
 		return err
 	}
 	if c.isWriting {
-		return ErrConcurrentWrite
+		panic("concurrent write to websocket connection")
 	}
 	c.isWriting = true
 	err = c.write(frameType, c.writeDeadline, frameData, nil)
 	if !c.isWriting {
-		return ErrConcurrentWrite
+		panic("concurrent write to websocket connection")
 	}
 	c.isWriting = false
 	return err
