@@ -1054,7 +1054,7 @@ func (c *Conn) NextReader() (messageType int, r io.Reader, err error) {
 	// this error, panic on repeated reads to the failed connection.
 	c.readErrCount++
 	if c.readErrCount >= 1000 {
-		return noFrame, nil, errors.New("repeated read on failed websocket connection")
+		panic("repeated read on failed websocket connection")
 	}
 
 	return noFrame, nil, c.readErr
@@ -1247,7 +1247,7 @@ func (c *Conn) EnableWriteCompression(enable bool) {
 // compression levels.
 func (c *Conn) SetCompressionLevel(level int) error {
 	if !isValidCompressionLevel(level) {
-		return errors.New("websocket: invalid compression level")
+		panic("websocket: invalid compression level")
 	}
 	c.compressionLevel = level
 	return nil
